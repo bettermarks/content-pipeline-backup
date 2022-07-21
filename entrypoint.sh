@@ -13,7 +13,6 @@ get_date () {
 : ${COMPRESS:='pigz'}
 : ${MAINTENANCE_DB:='postgres'}
 START_DATE=`date +%Y-%m-%d_%H-%M-%S`
-PG_URI="postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}"
 
 if [ -z "$GPG_KEYID" ]
 then
@@ -26,6 +25,7 @@ fi
 echo "$(get_date) Postgres backup started"
 
 export MC_HOST_backup="https://${AWS_ACCESS_KEY_ID}:${AWS_SECRET_ACCESS_KEY}@s3.${AWS_REGION}.amazonaws.com"
+export PGPASSWORD="${DB_PASSWORD}"
 
 mc mb backup/${S3_BUCK} --insecure || true
 
@@ -63,15 +63,15 @@ esac
 dump_db(){
   DATABASE=$1
   # Ping databaase
-  psql ${PG_URI%/}/${DATABASE} -c ''
+  psql -h "${DB_HOST}" -U "${DB_USER}" -d "${DATABASE}" -c ''
 
   echo "$(get_date) Dumping database: $DATABASE"
 
   if [ -z "$GPG_KEYID" ]
   then
-    pg_dump ${PG_URI%/}/${DATABASE} | $COMPRESS_CMD | mc pipe backup/${S3_BUCK}/${S3_NAME}-${START_DATE}-${DATABASE}.pgdump${COMPRESS_POSTFIX} --insecure
+    pg_dump -h "${DB_HOST}" -U "${DB_USER}" -d "${DATABASE}" | $COMPRESS_CMD | mc pipe backup/${S3_BUCK}/${S3_NAME}-${START_DATE}-${DATABASE}.pgdump${COMPRESS_POSTFIX} --insecure
   else
-    pg_dump ${PG_URI%/}/${DATABASE} | $COMPRESS_CMD \
+    pg_dump -h "${DB_HOST}" -U "${DB_USER}" -d "${DATABASE}" | $COMPRESS_CMD \
     | gpg --encrypt -z 0 --recipient ${GPG_KEYID} --trust-model always \
     | mc pipe backup/${S3_BUCK}/${S3_NAME}-${START_DATE}-${DATABASE}.pgdump${COMPRESS_POSTFIX}.pgp --insecure
   fi
