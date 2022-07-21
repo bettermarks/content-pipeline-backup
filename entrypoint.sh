@@ -77,22 +77,6 @@ dump_db(){
   fi
 }
 
-DB_NAME=${PG_URI##*/}
-if [[ $DB_NAME == *"@"* ]]
-then
-  DB_NAME=""
-fi
-
-if [ -z "$DB_NAME" ]
-then
-  echo "$(get_date) No database selected. Running backup for all databases:"
-  DB_LIST=$(psql ${PG_URI%/}/${MAINTENANCE_DB} -A -c "SELECT datname FROM pg_database WHERE datname NOT LIKE 'template%';" | head -n -1 | tail -n +2)
-  for db in $DB_LIST; do
-    dump_db "$db"
-  done
-else
-  PG_URI=${PG_URI%$DB_NAME}
-  dump_db "$DB_NAME"
-fi
+dump_db "$DB_NAME"
 
 echo "$(get_date) Postgres backup completed successfully"
