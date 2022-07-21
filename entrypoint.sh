@@ -13,6 +13,7 @@ get_date () {
 : ${COMPRESS:='pigz'}
 : ${MAINTENANCE_DB:='postgres'}
 START_DATE=`date +%Y-%m-%d_%H-%M-%S`
+PG_URI="postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}"
 
 if [ -z "$GPG_KEYID" ]
 then
@@ -24,7 +25,7 @@ fi
 
 echo "$(get_date) Postgres backup started"
 
-export MC_HOST_backup=$S3_URI
+export MC_HOST_backup="https://${AWS_ACCESS_KEY_ID}:${AWS_SECRET_ACCESS_KEY}@s3.${AWS_REGION}.amazonaws.com"
 
 mc mb backup/${S3_BUCK} --insecure || true
 
