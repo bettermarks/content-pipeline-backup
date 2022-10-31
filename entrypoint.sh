@@ -81,7 +81,7 @@ dump_db(){
     for file in $(mc ls backup/${S3_BUCK}/${S3_NAME} | awk '{ print $6 }' | sort | head -n -${KEEP})
     do
       echo "Remove obsolete: $file"
-      mc rm backup/${S3_BUCK}/${S3_NAME}$(cut -d '-' -f 2- <<< $file)
+      mc rm backup/${S3_BUCK}/${S3_NAME}-$(cut -d '-' -f 2- <<< $file)
     done
   fi
 }
