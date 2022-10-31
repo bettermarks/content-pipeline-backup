@@ -13,15 +13,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Get the version
-      id: vars
-      run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag backuptools/postgres-backup-s3:${{steps.vars.outputs.sha_short}} --tag backuptools/postgres-backup-s3
-    - name: Login to Dockerhub
-      run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
-    - name: Push the Docker image
-      run:  docker push backuptools/postgres-backup-s3:${{steps.vars.outputs.sha_short}}
-    - name: Push the :latest Docker image
-      run:  docker push backuptools/postgres-backup-s3
+      - uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.ECR_BACKUP_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.ECR_BACKUP_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+
+      - name: Login to Amazon ECR
+        if: ${{ github.ref == 'refs/heads/master' }}
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: Dockerfile
+          push: ${{ github.ref == 'refs/heads/master' }}
+          tags: "592115245551.dkr.ecr.eu-central-1.amazonaws.com/content-pipeline/backup:latest,592115245551.dkr.ecr.eu-central-1.amazonaws.com/content-pipeline/backup:${{ github.run_number }}"
