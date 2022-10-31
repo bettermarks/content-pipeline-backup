@@ -75,6 +75,15 @@ dump_db(){
     | gpg --encrypt -z 0 --recipient ${GPG_KEYID} --trust-model always \
     | mc pipe backup/${S3_BUCK}/${S3_NAME}-${START_DATE}-${DATABASE}.pgdump${COMPRESS_POSTFIX}.pgp --insecure
   fi
+
+  if [ ! -z "$KEEP" ]
+  then
+    for file in $(mc ls backup/${S3_BUCK}/${S3_NAME} | awk '{ print $6 }' | sort | head -n -${KEEP})
+    do
+      echo "Remove obsolete: $file"
+      mc rm backup/${S3_BUCK}/${S3_NAME}$(cut -d '-' -f 2- <<< $file)
+    done
+  fi
 }
 
 dump_db "$DB_NAME"
