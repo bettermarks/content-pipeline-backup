@@ -24,6 +24,8 @@ fi
 
 echo "$(get_date) Postgres backup started"
 
+DB_HOST=$(echo -n "${DB_HOST}" | cut -d ':' -f 1)
+
 export MC_HOST_backup="https://${AWS_ACCESS_KEY_ID}:${AWS_SECRET_ACCESS_KEY}@s3.${AWS_REGION}.amazonaws.com"
 export PGPASSWORD="${DB_PASSWORD}"
 
