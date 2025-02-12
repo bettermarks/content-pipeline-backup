@@ -17,7 +17,27 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Configure AWS credentials
+      # Upload to ops account ECR
+      - name: Configure AWS credentials (ops)
+        if: ${{ github.ref == 'refs/heads/master' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::676249682729:role/github-push-ecr-role
+          aws-region: eu-central-1
+      - name: Login to Amazon ECR server
+        if: ${{ github.ref == 'refs/heads/master' }}
+        id: login-ecr-server
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          push: ${{ github.ref == 'refs/heads/master' }}
+          tags: "676249682729.dkr.ecr.eu-central-1.amazonaws.com/content-pipeline/backup:${{ github.run_number }},676249682729.dkr.ecr.eu-central-1.amazonaws.com/content-pipeline/backup:latest"
+
+      # Still upload to staging ECR
+      - name: Configure AWS credentials (staging)
         uses: aws-actions/configure-aws-credentials@v1
         with:
           role-to-assume: arn:aws:iam::592115245551:role/github-push-ecr-role
