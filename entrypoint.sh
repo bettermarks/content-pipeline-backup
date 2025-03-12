@@ -10,9 +10,9 @@ get_date () {
 # Script
 : ${GPG_KEYSERVER:='keyserver.ubuntu.com'}
 : ${GPG_KEYID:=''}
-: ${COMPRESS:='pigz'}
 : ${MAINTENANCE_DB:='postgres'}
-START_DATE=`date +%Y-%m-%d_%H-%M-%S`
+START_DATE=$(date --utc "+%FT%TZ")
+DUMP=dump-${START_DATE}
 
 if [ -z "$GPG_KEYID" ]
 then
@@ -31,37 +31,6 @@ export PGPASSWORD="${DB_PASSWORD}"
 
 mc mb backup/${S3_BUCK} --insecure || true
 
-case $COMPRESS in
-  'pigz' )
-      COMPRESS_CMD='pigz -9'
-      COMPRESS_POSTFIX='.gz'
-    ;;
-  'xz' )
-      COMPRESS_CMD='xz'
-      COMPRESS_POSTFIX='.xz'
-    ;;
-  'bzip2' )
-      COMPRESS_CMD='bzip2 -9'
-      COMPRESS_POSTFIX='.bz2'
-    ;;
-  'lrzip' )
-      COMPRESS_CMD='lrzip -l -L5'
-      COMPRESS_POSTFIX='.lrz'
-    ;;
-  'brotli' )
-      COMPRESS_CMD='brotli -9'
-      COMPRESS_POSTFIX='.br'
-    ;;
-  'zstd' )
-      COMPRESS_CMD='zstd -9'
-      COMPRESS_POSTFIX='.zst'
-    ;;
-  * )
-      echo "$(get_date) Invalid compression method: $COMPRESS. The following are available: pigz, xz, bzip2, lrzip, brotli, zstd"
-      exit 1
-    ;;
-esac
-
 dump_db(){
   DATABASE=$1
   # Ping databaase
@@ -71,20 +40,11 @@ dump_db(){
 
   if [ -z "$GPG_KEYID" ]
   then
-    pg_dump -h "${DB_HOST}" -U "${DB_USER}" -d "${DATABASE}" | $COMPRESS_CMD | mc pipe backup/${S3_BUCK}/${S3_NAME}-${START_DATE}-${DATABASE}.pgdump${COMPRESS_POSTFIX} --insecure
+    pg_dump --format=custom -h "${DB_HOST}" -U "${DB_USER}" -d "${DATABASE}" | mc pipe backup/${S3_BUCK}/${S3_NAME}/${DUMP} --insecure
   else
-    pg_dump -h "${DB_HOST}" -U "${DB_USER}" -d "${DATABASE}" | $COMPRESS_CMD \
+    pg_dump --format=custom -h "${DB_HOST}" -U "${DB_USER}" -d "${DATABASE}" \
     | gpg --encrypt -z 0 --recipient ${GPG_KEYID} --trust-model always \
-    | mc pipe backup/${S3_BUCK}/${S3_NAME}-${START_DATE}-${DATABASE}.pgdump${COMPRESS_POSTFIX}.pgp --insecure
-  fi
-
-  if [ ! -z "$KEEP" ]
-  then
-    for file in $(mc ls backup/${S3_BUCK}/${S3_NAME} | awk '{ print $6 }' | sort | head -n -${KEEP})
-    do
-      echo "Remove obsolete: $file"
-      mc rm backup/${S3_BUCK}/${S3_NAME}-$(cut -d '-' -f 2- <<< $file)
-    done
+    | mc pipe backup/${S3_BUCK}/${S3_NAME}/${DUMP}.pgp --insecure
   fi
 }
 
