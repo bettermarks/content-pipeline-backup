@@ -10,7 +10,6 @@ get_date () {
 # Script
 : ${GPG_KEYSERVER:='keyserver.ubuntu.com'}
 : ${GPG_KEYID:=''}
-: ${MAINTENANCE_DB:='postgres'}
 START_DATE=$(date --utc "+%FT%TZ")
 DUMP=dump-${START_DATE}
 
