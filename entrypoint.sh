@@ -2,8 +2,10 @@
 set -e
 set -o pipefail
 
-START_DATE=$(date --utc "+%FT%TZ")
-DUMP=dump-${START_DATE}
+# Date function
+get_date () {
+    date --utc "+%FT%TZ"
+}
 
 echo "$(get_date) Postgres backup started"
 
@@ -19,7 +21,7 @@ dump_db(){
 
   echo "$(get_date) Dumping database: $DATABASE"
 
-  pg_dump --format=custom --no-owner -h "${DB_HOST}" -U "${DB_USER}" -d "${DATABASE}" | mc pipe backup/${S3_BUCK}/${S3_NAME}/${DUMP} --insecure
+  pg_dump --format=custom --no-owner -h "${DB_HOST}" -U "${DB_USER}" -d "${DATABASE}" | mc pipe backup/${S3_BUCK}/${S3_NAME}/dump-$(get_date) --insecure
 }
 
 dump_db "$DB_NAME"
