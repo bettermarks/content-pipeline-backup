@@ -1,7 +1,7 @@
 FROM debian:bookworm-slim
 
 RUN apt update \
-    && apt install -y gnupg postgresql-common wget \
+    && apt install -y postgresql-common wget \
     && /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y \
     && apt install -y postgresql-client-16 \
     && wget https://dl.minio.io/client/mc/release/linux-amd64/mc -O /sbin/mc \
