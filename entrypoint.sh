@@ -21,7 +21,10 @@ dump_db(){
 
   echo "$(get_date) Dumping database: $DATABASE"
 
-  pg_dump --format=custom --no-owner -h "${DB_HOST}" -U "${DB_USER}" -d "${DATABASE}" | mc pipe backup/${S3_BUCK}/${S3_NAME}/dump-$(get_date) --insecure
+  dump_file=dump-$(get_date)
+
+  pg_dump --format=custom --no-owner -h "${DB_HOST}" -U "${DB_USER}" -d "${DATABASE}" | mc pipe backup/${S3_BUCK}/${S3_NAME}/${dump_file} --insecure
+  echo ${dump_file} | mc pipe backup/${S3_BUCK}/${S3_NAME}/LATEST --insecure
 }
 
 dump_db "$DB_NAME"
